@@ -1,0 +1,32 @@
+[
+  {
+      "city": "Jastarnia",
+      "country": "Poland",
+      "lon": "18.676667",
+      "lat": "54.699444"
+    },
+  {
+      "city": "Bridgetown",
+      "country": "Barbados",
+      "lon": "13.0975",
+      "lat": "-59.616667"
+    },
+  {
+      "city": "Fortaleza",
+      "country": "Brazil",
+      "lon": "-38.5275",
+      "lat": "-3.7275"
+    },
+  {
+      "city": "Pissouri",
+      "country": "Cyprus",
+      "lon": "32.7",
+      "lat": "34.666667"
+    },
+  {
+      "city": "Le Morne",
+      "country": "Mauritius",
+      "lon": "57.328333",
+      "lat": "-20.451944"
+    }
+]
