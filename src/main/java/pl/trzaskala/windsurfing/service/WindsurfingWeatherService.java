@@ -10,7 +10,7 @@ import pl.trzaskala.windsurfing.model.Location;
 
 @Service
 @PropertySource("classpath:app.properties")
-public class WindsurfingWeatherService implements WeatherService {
+public class WindsurfingWeatherService implements WeatherService<Location> {
 
     private final RestClient client;
     private static final String API_URL = "https://api.weatherbit.io/v2.0/forecast/daily?";
