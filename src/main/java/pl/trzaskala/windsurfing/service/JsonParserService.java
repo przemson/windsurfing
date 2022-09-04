@@ -26,20 +26,20 @@ public class JsonParserService {
         return mapper.readValue(jsonFile, listType);
     }
 
-    public List<JsonNode> getJsonNodes(String jsonElem, String forecastData) {
+    public List<JsonNode> getJsonNodes(String jsonElem, String jsonInput) {
         Iterator<JsonNode> iterator = null;
         try {
-            iterator = mapper.readTree(forecastData).get(jsonElem).elements();
+            iterator = mapper.readTree(jsonInput).get(jsonElem).elements();
         } catch (JsonProcessingException e) {
             logger.error(String.format("Error while processing json element: %s", jsonElem));
         }
-        List<JsonNode> dateForecastJsonNodes = new ArrayList<>();
-        Objects.requireNonNull(iterator).forEachRemaining(dateForecastJsonNodes::add);
-        return dateForecastJsonNodes;
+        List<JsonNode> jsonNodes = new ArrayList<>();
+        Objects.requireNonNull(iterator).forEachRemaining(jsonNodes::add);
+        return jsonNodes;
     }
 
-    public List<JsonNode> filterJsonNodes(String jsonElem, String filteringValue, List<JsonNode> dateForecastJsonNodes) {
-        return dateForecastJsonNodes.stream().filter(n -> n.get(jsonElem).asText().equals(filteringValue))
+    public List<JsonNode> filterJsonNodes(String jsonElem, String filteringValue, List<JsonNode> jsonNodes) {
+        return jsonNodes.stream().filter(n -> n.get(jsonElem).asText().equals(filteringValue))
                                     .collect(Collectors.toList());
     }
 }
