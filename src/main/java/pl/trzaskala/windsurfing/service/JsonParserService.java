@@ -9,10 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,10 +17,15 @@ public class JsonParserService {
     private final ObjectMapper mapper = new ObjectMapper();
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(JsonParserService.class);
 
-    public <T> List<T> parseJsonArrays(InputStream jsonFile, Class<T> clazz) throws IOException {
+    public <T> List<T> parseJsonArrays(InputStream jsonFile, Class<T> clazz) {
         CollectionType listType =
                 mapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz);
-        return mapper.readValue(jsonFile, listType);
+        try {
+            return mapper.readValue(jsonFile, listType);
+        } catch (IOException e) {
+            logger.error("Error while reading json file", e);
+        }
+        return Collections.emptyList();
     }
 
     public List<JsonNode> getJsonNodes(String jsonElem, String jsonInput) {
@@ -31,7 +33,7 @@ public class JsonParserService {
         try {
             iterator = mapper.readTree(jsonInput).get(jsonElem).elements();
         } catch (JsonProcessingException e) {
-            logger.error(String.format("Error while processing json element: %s", jsonElem));
+            logger.error(String.format("Error while processing json element: %s", jsonElem), e);
         }
         List<JsonNode> jsonNodes = new ArrayList<>();
         Objects.requireNonNull(iterator).forEachRemaining(jsonNodes::add);

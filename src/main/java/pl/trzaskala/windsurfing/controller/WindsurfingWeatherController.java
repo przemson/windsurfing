@@ -15,19 +15,17 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.trzaskala.windsurfing.model.Forecast;
 import pl.trzaskala.windsurfing.model.Location;
 import pl.trzaskala.windsurfing.service.JsonParserService;
-import pl.trzaskala.windsurfing.service.WindsurfingWeatherService;
+import pl.trzaskala.windsurfing.service.WeatherService;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("api/weather")
 public class WindsurfingWeatherController {
-    private final WindsurfingWeatherService weatherService;
+    private final WeatherService<Location> weatherService;
     private final JsonParserService jsonParserService;
 
     @Value("classpath:locations.json")
@@ -35,7 +33,7 @@ public class WindsurfingWeatherController {
     public static final String DATE_FORMAT = "yyyy-MM-dd";
 
     public WindsurfingWeatherController(
-            WindsurfingWeatherService weatherService, JsonParserService jsonParserService) {
+            WeatherService<Location> weatherService, JsonParserService jsonParserService) {
         this.weatherService = weatherService;
         this.jsonParserService = jsonParserService;
     }
@@ -44,17 +42,26 @@ public class WindsurfingWeatherController {
     @Operation(summary = "Get best windsurfing location based on weather forecast for a given date",
             responses = {@ApiResponse(responseCode = "200", description = "Success")})
     public ResponseEntity<Location> getBestWindsurfingLocation(
-            @RequestParam(value = "date") @DateTimeFormat(pattern = DATE_FORMAT) Date date) throws IOException {
+            @RequestParam(value = "date") @DateTimeFormat(pattern = DATE_FORMAT) Date date)
+            throws IOException {
         List<Location> locations = jsonParserService.parseJsonArrays(resource.getInputStream(), Location.class);
-        locations.forEach(location -> {
-            String response = weatherService.getForecast(location).getBody();
-            populateForecast(location, date, response);
-        });
+        doExternalApiCalls(date, locations);
+
         Optional<Location> bestLocation = getBestWindsurfingConditions(locations);
         if (bestLocation.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(bestLocation.get());
+    }
+
+    private void doExternalApiCalls(Date date, List<Location> locations) {
+        List<CompletableFuture<Void>> apiCalls = new ArrayList<>();
+        locations.forEach(
+                location -> apiCalls.add(CompletableFuture.supplyAsync(() -> weatherService.getForecast(location))
+                                                               .thenAccept(
+                                                                       response -> this.populateForecast(location, date,
+                                                                               response.getBody()))));
+        CompletableFuture.allOf(apiCalls.toArray(new CompletableFuture[0])).join();
     }
 
     private Optional<Location> getBestWindsurfingConditions(List<Location> locationList) {
