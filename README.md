@@ -24,6 +24,10 @@ Sample response:
 Works for predefined locations:
 Jastarnia (Poland), Bridgetown (Barbados), Fortaleza (Brazil), Pissouri (Cyprus), Le Morne (Mauritius)
 
+## Build env:
+1) Java 11 or higher
+2) Maven 3.6
+
 ## How to run
 1) Build with maven: ``` mvn package```
 2) Run with java: ```java -jar <jar.file>```
@@ -33,3 +37,4 @@ For example: http://localhost:8080/api/weather/windsurfing-location?date=2022-09
 
 ## Extend with new locations
 Simply add new location to ```locations.json``` file
+
