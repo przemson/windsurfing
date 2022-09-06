@@ -28,18 +28,6 @@ public class ForecastProcessor {
         this.weatherService = weatherService;
     }
 
-    public void populateForecast(Location location, Date date, String response) {
-        String dateStr = new SimpleDateFormat(DATE_FORMAT).format(date);
-        List<JsonNode> nodes = jsonParserService.getJsonNodes("data", response);
-        List<JsonNode> filteredNodes = jsonParserService.filterJsonNodes("datetime", dateStr, nodes);
-        if (filteredNodes.isEmpty()) {
-            throw new RuntimeException(String.format("No forecast for a given day: %s", dateStr));
-        }
-        double wind = filteredNodes.get(0).get("wind_spd").asDouble();
-        double temperature = filteredNodes.get(0).get("temp").asDouble();
-        location.setForecast(new Forecast(wind, temperature));
-    }
-
     public Optional<Location> getBestWindsurfingLocation(List<Location> locationList, Date date) {
         doExternalApiCalls(locationList, location -> response -> populateForecast(location, date,
                 response.getBody()), location1 -> () -> weatherService.getForecast(location1));
@@ -54,6 +42,18 @@ public class ForecastProcessor {
                 location -> apiCalls.add(CompletableFuture.supplyAsync(locationSupply.apply(location))
                         .thenAccept(locationConsume.apply(location))));
         CompletableFuture.allOf(apiCalls.toArray(new CompletableFuture[0])).join();
+    }
+
+    private void populateForecast(Location location, Date date, String response) {
+        String dateStr = new SimpleDateFormat(DATE_FORMAT).format(date);
+        List<JsonNode> nodes = jsonParserService.getJsonNodes("data", response);
+        List<JsonNode> filteredNodes = jsonParserService.filterJsonNodes("datetime", dateStr, nodes);
+        if (filteredNodes.isEmpty()) {
+            throw new RuntimeException(String.format("No forecast for a given day: %s", dateStr));
+        }
+        double wind = filteredNodes.get(0).get("wind_spd").asDouble();
+        double temperature = filteredNodes.get(0).get("temp").asDouble();
+        location.setForecast(new Forecast(wind, temperature));
     }
 
 }
