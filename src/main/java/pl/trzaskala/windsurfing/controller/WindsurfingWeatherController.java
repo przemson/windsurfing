@@ -35,7 +35,7 @@ public class WindsurfingWeatherController {
         this.forecastProcessor = forecastProcessor;
     }
 
-    @GetMapping(value = "/windsurfing-locations", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/windsurfing-location", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get best windsurfing location based on weather forecast for a given date",
             responses = {@ApiResponse(responseCode = "200", description = "Success")})
     public ResponseEntity<Location> getBestWindsurfingLocation(
