@@ -9,7 +9,7 @@ public class Forecast {
     private final double temperature;
 
     @JsonCreator
-    public Forecast(@JsonProperty("wind speed") double windSpeed, @JsonProperty("temperature") double temperature) {
+    public Forecast(@JsonProperty("wind-speed") double windSpeed, @JsonProperty("temperature") double temperature) {
         this.windSpeed = windSpeed;
         this.temperature = temperature;
     }
