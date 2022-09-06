@@ -1,6 +1,5 @@
 package pl.trzaskala.windsurfing.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,30 +11,28 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pl.trzaskala.windsurfing.model.Forecast;
 import pl.trzaskala.windsurfing.model.Location;
+import pl.trzaskala.windsurfing.service.ForecastProcessor;
 import pl.trzaskala.windsurfing.service.JsonParserService;
-import pl.trzaskala.windsurfing.service.WeatherService;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/weather")
 public class WindsurfingWeatherController {
-    private final WeatherService<Location> weatherService;
     private final JsonParserService jsonParserService;
+    private final ForecastProcessor forecastProcessor;
 
     @Value("classpath:locations.json")
     private Resource resource;
     public static final String DATE_FORMAT = "yyyy-MM-dd";
 
-    public WindsurfingWeatherController(
-            WeatherService<Location> weatherService, JsonParserService jsonParserService) {
-        this.weatherService = weatherService;
+    public WindsurfingWeatherController(JsonParserService jsonParserService, ForecastProcessor forecastProcessor) {
         this.jsonParserService = jsonParserService;
+        this.forecastProcessor = forecastProcessor;
     }
 
     @GetMapping(value = "/windsurfing-locations", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -45,40 +42,11 @@ public class WindsurfingWeatherController {
             @RequestParam(value = "date") @DateTimeFormat(pattern = DATE_FORMAT) Date date)
             throws IOException {
         List<Location> locations = jsonParserService.parseJsonArrays(resource.getInputStream(), Location.class);
-        doExternalApiCalls(date, locations);
-
-        Optional<Location> bestLocation = getBestWindsurfingConditions(locations);
+        Optional<Location> bestLocation = forecastProcessor.getBestWindsurfingLocation(locations, date);
         if (bestLocation.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(bestLocation.get());
-    }
-
-    private void doExternalApiCalls(Date date, List<Location> locations) {
-        List<CompletableFuture<Void>> apiCalls = new ArrayList<>();
-        locations.forEach(
-                location -> apiCalls.add(CompletableFuture.supplyAsync(() -> weatherService.getForecast(location))
-                                                               .thenAccept(
-                                                                       response -> this.populateForecast(location, date,
-                                                                               response.getBody()))));
-        CompletableFuture.allOf(apiCalls.toArray(new CompletableFuture[0])).join();
-    }
-
-    private Optional<Location> getBestWindsurfingConditions(List<Location> locationList) {
-        return locationList.stream().filter(location -> location.getForecast().isSuitableForWindsurfing())
-                           .max(Comparator.comparing(location -> location.getForecast().calculateWindsurfingScore()));
-    }
-
-    private void populateForecast(Location location, Date date, String response) {
-        String dateStr = new SimpleDateFormat(DATE_FORMAT).format(date);
-        List<JsonNode> nodes = jsonParserService.getJsonNodes("data", response);
-        List<JsonNode> filteredNodes = jsonParserService.filterJsonNodes("datetime", dateStr, nodes);
-        if (filteredNodes.isEmpty()) {
-            throw new RuntimeException(String.format("No forecast for a given day: %s", dateStr));
-        }
-        double wind = filteredNodes.get(0).get("wind_spd").asDouble();
-        double temperature = filteredNodes.get(0).get("temp").asDouble();
-        location.setForecast(new Forecast(wind, temperature));
     }
 
 }
